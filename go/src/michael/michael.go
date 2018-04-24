@@ -7,7 +7,21 @@ import (
 )
 
 type pluginexec string
-
+// this fucntion should be parsed with ^ as field seperator
+// 0 - file id
+// 1 - parent file id
+// 2 - filename
+// 3 - link_parent
+// 4 - inode
+// 5 - file permissions
+// 6 - is Dir
+// 7 - is hardlink
+// 8 - user id
+// 9 - group id
+// 10 - filesize - bytes
+// 11 - ctime - epoch
+// 12 - atime - epoch
+// 13 - mtime - epoch
 func list_file(p string,id int,pid int) (string,bool,int) {
   file, err := os.Stat(p)
   if err != nil {
@@ -15,7 +29,19 @@ func list_file(p string,id int,pid int) (string,bool,int) {
   }
 
   filemode := file.Mode()
-  ret_val := fmt.Sprintf("%d^%d^%s^%o^%t^%t",id,pid,file.Name(),filemode.Perm(),filemode.IsDir(),filemode.IsRegular())
+
+  link_parent := "-"
+
+  if filemode&os.ModeSymlink != 0 {
+    link, err := os.Readlink(file.Name())
+    if err == nil {
+        link_parent = link
+    }
+  }
+
+  uid, gid, inode, is_hardlink,ctime, atime, mtime := file_info(file)
+
+  ret_val := fmt.Sprintf("%d^%d^%s^%s^%d^%o^%t^%t^%d^%d^%d^%d^%d^%d",id,pid,file.Name(),link_parent,inode,filemode.Perm(),filemode.IsDir(),is_hardlink,uid,gid,file.Size(),ctime,atime,mtime)
   return ret_val, filemode.IsDir(), 0
 }
 
